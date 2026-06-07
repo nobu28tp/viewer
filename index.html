@@ -1650,6 +1650,13 @@
             // Theme (dark chrome, content has fixed colors)
             setTheme();
 
+            // iOS/iPadOS detection to fix file input gray-out issue
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS) {
+                fileInput.removeAttribute('accept');
+            }
+
             // Marked
             initMarked();
 
