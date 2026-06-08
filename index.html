@@ -1170,6 +1170,10 @@
                     <span>ファイルを開く</span>
                 </button>
                 <div class="separator"></div>
+                <button class="btn" id="btn-copy" title="Markdownをコピー" style="display: none;">
+                    <i data-lucide="copy"></i>
+                    <span>コピー</span>
+                </button>
                 <button class="btn" id="btn-print" title="印刷" style="display: none;">
                     <i data-lucide="printer"></i>
                     <span>印刷</span>
@@ -1286,6 +1290,7 @@
         const btnOpen = document.getElementById('btn-open');
         const dropBtnOpen = document.getElementById('drop-btn-open');
         const btnPrint = document.getElementById('btn-print');
+        const btnCopy = document.getElementById('btn-copy');
         const modeSwitcher = document.getElementById('mode-switcher');
         const btnModePreview = document.getElementById('btn-mode-preview');
         const btnModeRaw = document.getElementById('btn-mode-raw');
@@ -1737,9 +1742,11 @@
             if (mode === 'preview') {
                 previewContainer.style.display = '';
                 rawContainer.classList.remove('active');
+                btnCopy.style.display = 'none';
             } else {
                 previewContainer.style.display = 'none';
                 rawContainer.classList.add('active');
+                btnCopy.style.display = '';
             }
 
             // Re-create icons for updated buttons
@@ -1864,6 +1871,34 @@
 
         btnPrint.addEventListener('click', () => {
             window.print();
+        });
+
+        let copyFeedbackTimer = null;
+        btnCopy.addEventListener('click', async () => {
+            if (!currentRawText) return;
+            try {
+                await navigator.clipboard.writeText(currentRawText);
+                showToast('Markdownをクリップボードにコピーしました');
+
+                // Change icon to check
+                const icon = btnCopy.querySelector('i, svg');
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'check');
+                    if (window.lucide) lucide.createIcons({ root: btnCopy });
+                }
+
+                // Restore to copy icon after 2 seconds
+                clearTimeout(copyFeedbackTimer);
+                copyFeedbackTimer = setTimeout(() => {
+                    if (icon) {
+                        icon.setAttribute('data-lucide', 'copy');
+                        if (window.lucide) lucide.createIcons({ root: btnCopy });
+                    }
+                }, 2000);
+            } catch (err) {
+                console.error('Copy failed', err);
+                showToast('コピーに失敗しました', true);
+            }
         });
 
         // Mode switcher
