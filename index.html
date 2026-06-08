@@ -1752,13 +1752,15 @@
         let toastTimer = null;
         function showToast(message, isError = false) {
             toastText.textContent = message;
-            const icon = toastEl.querySelector('i');
-            if (isError) {
-                toastEl.classList.add('error');
-                icon.setAttribute('data-lucide', 'alert-circle');
-            } else {
-                toastEl.classList.remove('error');
-                icon.setAttribute('data-lucide', 'check-circle');
+            const icon = toastEl.querySelector('i, svg');
+            if (icon) {
+                if (isError) {
+                    toastEl.classList.add('error');
+                    icon.setAttribute('data-lucide', 'alert-circle');
+                } else {
+                    toastEl.classList.remove('error');
+                    icon.setAttribute('data-lucide', 'check-circle');
+                }
             }
             if (window.lucide) lucide.createIcons({ root: toastEl });
             toastEl.classList.add('show');
@@ -1938,8 +1940,7 @@
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    apiKey: googleApiKey,
-                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+                    apiKey: googleApiKey
                 });
                 gapiInited = true;
             } catch (err) {
@@ -2042,9 +2043,11 @@
                 showToast('Googleドライブからファイルをダウンロード中...');
                 
                 try {
-                    const response = await gapi.client.drive.files.get({
-                        fileId: fileId,
-                        alt: 'media'
+                    // gapi.client.request を使用して CORS を完全に回避してダウンロード
+                    const response = await gapi.client.request({
+                        path: 'https://www.googleapis.com/drive/v3/files/' + fileId,
+                        method: 'GET',
+                        params: { alt: 'media' }
                     });
 
                     const text = response.body;
