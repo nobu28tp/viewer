@@ -1842,7 +1842,11 @@
 
         btnOpen.addEventListener('click', openFileDialog);
         dropBtnOpen.addEventListener('click', openFileDialog);
-        dropZoneInner.addEventListener('click', openFileDialog);
+        dropZoneInner.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                openFileDialog();
+            }
+        });
 
         // Settings events
         btnSettings.addEventListener('click', openSettingsModal);
