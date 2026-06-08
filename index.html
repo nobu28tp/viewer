@@ -1123,6 +1123,53 @@
             gap: 0.5rem;
             background: rgba(0, 0, 0, 0.1);
         }
+
+        /* ── Responsive styles for mobile ── */
+        @media (max-width: 768px) {
+            .glass-header {
+                padding: 0.5rem 0.8rem;
+                gap: 0.4rem;
+            }
+
+            .logo h1 {
+                display: none; /* モバイルではロゴ文字を非表示にしてアイコンのみにする */
+            }
+
+            .file-name-display {
+                max-width: 110px; /* ファイル名表示幅を縮小 */
+            }
+
+            .btn-text {
+                display: none; /* 各ボタンのテキストを非表示にしてアイコン化 */
+            }
+
+            .btn {
+                padding: 0.45rem; /* ボタンの余白を狭める */
+                gap: 0;
+            }
+
+            .mode-btn {
+                padding: 5px 8px; /* スイッチャーもコンパクトに */
+                gap: 0;
+            }
+
+            .encoding-wrap {
+                display: none; /* 文字コード選択はモバイルでは非表示に */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .preview-container {
+                padding: 1rem 1.2rem; /* モバイルでのプレビュー表示の余白を最適化 */
+            }
+            .raw-container {
+                padding: 1rem 1.2rem;
+            }
+            .raw-line-num {
+                width: 35px;
+                padding-right: 8px;
+            }
+        }
     </style>
 </head>
 
@@ -1142,11 +1189,11 @@
                 <div class="mode-switcher" id="mode-switcher">
                     <button class="mode-btn active" data-mode="preview" id="btn-mode-preview">
                         <i data-lucide="eye"></i>
-                        <span>プレビュー</span>
+                        <span class="btn-text">プレビュー</span>
                     </button>
                     <button class="mode-btn" data-mode="raw" id="btn-mode-raw">
                         <i data-lucide="code-2"></i>
-                        <span>Markdown</span>
+                        <span class="btn-text">Markdown</span>
                     </button>
                 </div>
             </div>
@@ -1163,20 +1210,20 @@
                 </div>
                 <button class="btn btn-google" id="btn-google-open" title="Googleドライブから開く">
                     <i data-lucide="hard-drive"></i>
-                    <span>Googleドライブ</span>
+                    <span class="btn-text">Googleドライブ</span>
                 </button>
                 <button class="btn btn-accent" id="btn-open" title="ファイルを開く">
                     <i data-lucide="folder-open"></i>
-                    <span>ファイルを開く</span>
+                    <span class="btn-text">ファイルを開く</span>
                 </button>
                 <div class="separator"></div>
                 <button class="btn" id="btn-copy" title="Markdownをコピー" style="display: none;">
                     <i data-lucide="copy"></i>
-                    <span>コピー</span>
+                    <span class="btn-text">コピー</span>
                 </button>
                 <button class="btn" id="btn-print" title="印刷" style="display: none;">
                     <i data-lucide="printer"></i>
-                    <span>印刷</span>
+                    <span class="btn-text">印刷</span>
                 </button>
                 <button class="btn" id="btn-settings" title="設定">
                     <i data-lucide="settings"></i>
