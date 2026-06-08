@@ -2009,6 +2009,7 @@
         function createPicker() {
             const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
             view.setMimeTypes('text/markdown,text/plain,application/octet-stream');
+            view.setIncludeFolders(true); // フォルダを含めて階層移動を可能にする
             
             const picker = new google.picker.PickerBuilder()
                 .enableFeature(google.picker.Feature.NAV_HIDDEN)
@@ -2028,7 +2029,7 @@
                 const fileName = doc[google.picker.Document.NAME];
 
                 if (!fileName.match(/\.(md|markdown|txt)$/i)) {
-                    showToast('Markdownファイル (.md) を選択してください', true);
+                    showToast(`選択エラー: 「${fileName}」は対象外のファイル形式です (.md, .txt のみ)`, true);
                     return;
                 }
 
@@ -2042,7 +2043,8 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('HTTP error ' + response.status);
+                        const errorDetails = await response.text().catch(() => '詳細不明');
+                        throw new Error(`HTTP ${response.status}: ${errorDetails}`);
                     }
 
                     const text = await response.text();
@@ -2065,7 +2067,7 @@
                     showToast('ファイルを読み込みました: ' + fileName);
                 } catch (error) {
                     console.error('Error fetching file content from Google Drive:', error);
-                    showToast('ファイルの取得に失敗しました。APIキーまたは権限を確認してください。', true);
+                    showToast(`ファイル取得失敗: ${error.message} (認証時の権限チェックをオンにしているか確認してください)`, true);
                 }
             }
         }
