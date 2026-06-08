@@ -28,6 +28,10 @@
     <!-- Icons (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Google APIs & Identity Services for Google Drive Integration -->
+    <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+
     <style>
         :root {
             --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -956,6 +960,169 @@
                 overflow: visible !important;
             }
         }
+
+        /* ── Settings Modal & Cloud Buttons ── */
+        .btn-google {
+            background: rgba(219, 68, 85, 0.1);
+            border-color: rgba(219, 68, 85, 0.3);
+            color: #ea4335;
+        }
+
+        .btn-google:hover {
+            background: rgba(219, 68, 85, 0.18);
+            border-color: #ea4335;
+        }
+
+        .drop-btn-google {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+        }
+
+        .drop-btn-google:hover {
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-title i {
+            color: var(--accent-color);
+            width: 20px;
+            height: 20px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.55rem 0.75rem;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .form-help {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .form-help a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .form-help a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 
@@ -994,6 +1161,10 @@
                         <option value="EUC-JP">EUC-JP</option>
                     </select>
                 </div>
+                <button class="btn btn-google" id="btn-google-open" title="Googleドライブから開く">
+                    <i data-lucide="hard-drive"></i>
+                    <span>Googleドライブ</span>
+                </button>
                 <button class="btn btn-accent" id="btn-open" title="ファイルを開く">
                     <i data-lucide="folder-open"></i>
                     <span>ファイルを開く</span>
@@ -1002,6 +1173,9 @@
                 <button class="btn" id="btn-print" title="印刷" style="display: none;">
                     <i data-lucide="printer"></i>
                     <span>印刷</span>
+                </button>
+                <button class="btn" id="btn-settings" title="設定">
+                    <i data-lucide="settings"></i>
                 </button>
             </div>
         </header>
@@ -1017,10 +1191,16 @@
                         .md ファイルをここにドラッグ＆ドロップしてプレビュー表示します
                     </div>
                     <div class="drop-or">または</div>
-                    <button class="drop-btn" id="drop-btn-open">
-                        <i data-lucide="folder-open"></i>
-                        ファイルを選択
-                    </button>
+                    <div style="display: flex; gap: 0.8rem; width: 100%; justify-content: center; flex-wrap: wrap;">
+                        <button class="drop-btn" id="drop-btn-open">
+                            <i data-lucide="folder-open"></i>
+                            ファイルを選択
+                        </button>
+                        <button class="drop-btn drop-btn-google" id="drop-btn-google-open">
+                            <i data-lucide="hard-drive"></i>
+                            Googleドライブ
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1053,6 +1233,38 @@
     <!-- Hidden file input -->
     <input type="file" id="file-input" accept=".md,.markdown,.txt" style="display: none;">
 
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="settings"></i>
+                    <span>外部ドライブ連携設定</span>
+                </div>
+                <button class="modal-close" id="btn-close-settings">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="setting-google-api-key">Google API キー</label>
+                    <input class="form-input" type="password" id="setting-google-api-key" placeholder="AIzaSy...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="setting-google-client-id">Google OAuth クライアントID</label>
+                    <input class="form-input" type="text" id="setting-google-client-id" placeholder="xxxx.apps.googleusercontent.com">
+                </div>
+                <div class="form-help">
+                    <strong>設定方法:</strong> Google Cloud Console でプロジェクトを作成し、Google Picker APIを有効化して認証情報を取得してください。JavaScript生成元として <code>https://&lt;username&gt;.github.io</code>（またはお使いのドメイン）を許可する必要があります。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btn-cancel-settings">キャンセル</button>
+                <button class="btn btn-accent" id="btn-save-settings">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Marp style injection -->
     <style id="marp-style"></style>
 
@@ -1079,9 +1291,28 @@
         const btnModeRaw = document.getElementById('btn-mode-raw');
         const encodingSelect = document.getElementById('encoding-select');
 
+        // Settings & Google Drive DOM refs
+        const btnSettings = document.getElementById('btn-settings');
+        const settingsModal = document.getElementById('settings-modal');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        const btnCancelSettings = document.getElementById('btn-cancel-settings');
+        const btnSaveSettings = document.getElementById('btn-save-settings');
+        const settingGoogleApiKey = document.getElementById('setting-google-api-key');
+        const settingGoogleClientId = document.getElementById('setting-google-client-id');
+        const btnGoogleOpen = document.getElementById('btn-google-open');
+        const dropBtnGoogleOpen = document.getElementById('drop-btn-google-open');
+
         let currentFileName = '';
         let currentRawText = ''; // 生テキストを保持
         let currentViewMode = 'preview'; // 'preview' or 'raw'
+
+        // Google API integration states
+        let googleApiKey = '';
+        let googleClientId = '';
+        let gapiInited = false;
+        let gisInited = false;
+        let tokenClient = null;
+        let accessToken = null;
 
         // ============================================================
         // Marp Slide Themes (Built-in engine)
@@ -1604,6 +1835,23 @@
         dropBtnOpen.addEventListener('click', openFileDialog);
         dropZoneInner.addEventListener('click', openFileDialog);
 
+        // Settings events
+        btnSettings.addEventListener('click', openSettingsModal);
+        btnCloseSettings.addEventListener('click', closeSettingsModal);
+        btnCancelSettings.addEventListener('click', closeSettingsModal);
+        btnSaveSettings.addEventListener('click', saveSettings);
+
+        // Close settings modal when clicking outside of it
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettingsModal();
+            }
+        });
+
+        // Google Drive events
+        btnGoogleOpen.addEventListener('click', handleGoogleDriveOpen);
+        dropBtnGoogleOpen.addEventListener('click', handleGoogleDriveOpen);
+
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 loadFile(e.target.files[0]);
@@ -1644,11 +1892,198 @@
         });
 
         // ============================================================
+        // Settings & Modal Control
+        // ============================================================
+        function loadSettings() {
+            googleApiKey = localStorage.getItem('markdown_viewer_google_api_key') || '';
+            googleClientId = localStorage.getItem('markdown_viewer_google_client_id') || '';
+
+            settingGoogleApiKey.value = googleApiKey;
+            settingGoogleClientId.value = googleClientId;
+        }
+
+        function saveSettings() {
+            googleApiKey = settingGoogleApiKey.value.trim();
+            googleClientId = settingGoogleClientId.value.trim();
+
+            localStorage.setItem('markdown_viewer_google_api_key', googleApiKey);
+            localStorage.setItem('markdown_viewer_google_client_id', googleClientId);
+
+            // Re-initialize GIS token client if client ID changed
+            if (googleClientId) {
+                initGis();
+            }
+
+            showToast('設定を保存しました');
+            closeSettingsModal();
+        }
+
+        function openSettingsModal() {
+            loadSettings();
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
+        }
+
+        // ============================================================
+        // Google Drive Picker Integration
+        // ============================================================
+        function gapiLoaded() {
+            gapi.load('client:picker', initializeGapiClient);
+        }
+        window.gapiLoaded = gapiLoaded;
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({});
+                gapiInited = true;
+            } catch (err) {
+                console.error('Error initializing GAPI client', err);
+            }
+        }
+
+        function gisLoaded() {
+            gisInited = true;
+            initGis();
+        }
+        window.gisLoaded = gisLoaded;
+
+        function initGis() {
+            if (!googleClientId || !window.google) return;
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: googleClientId,
+                    scope: 'https://www.googleapis.com/auth/drive.readonly',
+                    callback: '', // defined dynamically during authentication request
+                });
+            } catch (err) {
+                console.error('Error initializing GIS token client', err);
+            }
+        }
+
+        function loadGoogleApisIfNecessary() {
+            if (window.gapi && !gapiInited) {
+                gapiLoaded();
+            }
+            if (window.google && window.google.accounts && !gisInited) {
+                gisLoaded();
+            }
+        }
+
+        function handleGoogleDriveOpen() {
+            if (!googleApiKey || !googleClientId) {
+                showToast('Google ドライブ連携の設定（APIキーとクライアントID）を入力してください', true);
+                openSettingsModal();
+                return;
+            }
+
+            loadGoogleApisIfNecessary();
+
+            if (!tokenClient) {
+                initGis();
+            }
+
+            if (!tokenClient) {
+                showToast('Google APIの初期化に失敗しました。クライアントIDを確認してください。', true);
+                return;
+            }
+
+            tokenClient.callback = async (response) => {
+                if (response.error !== undefined) {
+                    showToast('Google認証エラー: ' + response.error, true);
+                    return;
+                }
+                accessToken = response.access_token;
+                createPicker();
+            };
+
+            if (accessToken === null) {
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        function createPicker() {
+            const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
+            view.setMimeTypes('text/markdown,text/plain,application/octet-stream');
+            
+            const picker = new google.picker.PickerBuilder()
+                .enableFeature(google.picker.Feature.NAV_HIDDEN)
+                .setDeveloperKey(googleApiKey)
+                .setAppId(googleClientId.split('-')[0])
+                .setOAuthToken(accessToken)
+                .addView(view)
+                .setCallback(pickerCallback)
+                .build();
+            picker.setVisible(true);
+        }
+
+        async function pickerCallback(data) {
+            if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
+                const doc = data[google.picker.Response.DOCUMENTS][0];
+                const fileId = doc[google.picker.Document.ID];
+                const fileName = doc[google.picker.Document.NAME];
+
+                if (!fileName.match(/\.(md|markdown|txt)$/i)) {
+                    showToast('Markdownファイル (.md) を選択してください', true);
+                    return;
+                }
+
+                showToast('Googleドライブからファイルをダウンロード中...');
+                
+                try {
+                    const response = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+                        headers: {
+                            'Authorization': 'Bearer ' + accessToken
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('HTTP error ' + response.status);
+                    }
+
+                    const text = await response.text();
+                    currentFileName = fileName;
+                    currentRawText = text;
+
+                    dropZone.style.display = 'none';
+                    previewWrapper.classList.add('active');
+                    btnPrint.style.display = '';
+                    fileNameDisplay.style.display = '';
+                    fileNameText.textContent = fileName;
+                    modeSwitcher.classList.add('visible');
+
+                    document.title = `${fileName} - Markdown Viewer`;
+
+                    renderPreview(text);
+                    renderRawView(text);
+                    applyViewMode(currentViewMode);
+
+                    showToast('ファイルを読み込みました: ' + fileName);
+                } catch (error) {
+                    console.error('Error fetching file content from Google Drive:', error);
+                    showToast('ファイルの取得に失敗しました。APIキーまたは権限を確認してください。', true);
+                }
+            }
+        }
+
+        // ============================================================
         // Initialization
         // ============================================================
         function init() {
             // Theme (dark chrome, content has fixed colors)
             setTheme();
+
+            // Load settings from localStorage
+            loadSettings();
+
+            // Initialize GIS if Client ID is configured
+            if (googleClientId) {
+                initGis();
+            }
 
             // iOS/iPadOS detection to fix file input gray-out issue
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
