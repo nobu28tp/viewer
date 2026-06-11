@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Markdown Viewer</title>
     <meta name="description" content="Markdownファイルをプレビュー表示するビューワー。Mermaid図、コードハイライト、Marpスライド対応。">
 
@@ -28,41 +28,51 @@
     <!-- Icons (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Google APIs & Identity Services for Google Drive Integration -->
-    <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
-
     <style>
         :root {
-            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --font-mono: "SF Mono", SFMono-Regular, ui-monospace, "Fira Code", Menlo, Monaco, Consolas, monospace;
 
-            /* Dark mode (default) */
-            --bg-color: #0d1117;
-            --surface-color: #161b22;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent-color: #58a6ff;
-            --accent-hover: #79c0ff;
-            --border-color: #30363d;
-            --header-bg: rgba(22, 27, 34, 0.85);
-            --glow-color: rgba(88, 166, 255, 0.15);
-            --drop-bg: rgba(88, 166, 255, 0.06);
-            --drop-border: rgba(88, 166, 255, 0.3);
+            /* Light mode (default iOS styles) */
+            --bg-color: #f2f2f7; /* iOS systemGroupedBackground */
+            --content-bg: #ffffff; /* iOS systemBackground */
+            --text-primary: #000000;
+            --text-secondary: #3c3c43;
+            --text-tertiary: #8e8e93;
+            --accent-color: #007aff; /* iOS blue */
+            --border-color: rgba(60, 60, 67, 0.29); /* iOS separator */
+            --header-bg: rgba(249, 249, 249, 0.82);
+            --segmented-bg: rgba(120, 120, 128, 0.12);
+            --segmented-active-bg: #ffffff;
+            --segmented-active-text: #000000;
+            --button-bg: #ffffff;
+            --button-text: #007aff;
+            --search-bg: rgba(255, 255, 255, 0.85);
+            --code-block-bg: #f2f2f7;
+            --code-text: #000000;
+            --overlay-shadow: rgba(0, 0, 0, 0.1);
         }
 
-        html[data-theme="light"] {
-            --bg-color: #f6f8fa;
-            --surface-color: #ffffff;
-            --text-primary: #1f2328;
-            --text-secondary: #656d76;
-            --accent-color: #0969da;
-            --accent-hover: #0551a5;
-            --border-color: #d0d7de;
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --glow-color: rgba(9, 105, 218, 0.1);
-            --drop-bg: rgba(9, 105, 218, 0.04);
-            --drop-border: rgba(9, 105, 218, 0.25);
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000; /* iOS dark systemBackground */
+                --content-bg: #1c1c1e; /* iOS dark secondarySystemGroupedBackground */
+                --text-primary: #ffffff;
+                --text-secondary: #ebebf5;
+                --text-tertiary: #8e8e93;
+                --accent-color: #0a84ff; /* iOS dark blue */
+                --border-color: rgba(84, 84, 88, 0.6);
+                --header-bg: rgba(28, 28, 30, 0.82);
+                --segmented-bg: rgba(120, 120, 128, 0.24);
+                --segmented-active-bg: #636366;
+                --segmented-active-text: #ffffff;
+                --button-bg: #1c1c1e;
+                --button-text: #0a84ff;
+                --search-bg: rgba(44, 44, 46, 0.85);
+                --code-block-bg: #2c2c2e;
+                --code-text: #ffffff;
+                --overlay-shadow: rgba(0, 0, 0, 0.3);
+            }
         }
 
         * {
@@ -92,834 +102,242 @@
             width: 100%;
         }
 
-        /* Scrollbars */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
-        }
-
-        /* ── Header ── */
+        /* ── Header (iOS Glass Navbar) ── */
         .glass-header {
+            display: flex;
+            flex-direction: column;
+            background: var(--header-bg);
+            backdrop-filter: blur(20px) saturate(190%);
+            -webkit-backdrop-filter: blur(20px) saturate(190%);
+            border-bottom: 0.5px solid var(--border-color);
+            z-index: 10;
+            flex-shrink: 0;
+            padding-top: env(safe-area-inset-top, 20px);
+        }
+
+        .nav-title-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.6rem 1.5rem;
-            background: var(--header-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
-            z-index: 10;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-            flex-shrink: 0;
+            height: 48px;
+            padding: 0 16px;
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-width: 0;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-shrink: 0;
-        }
-
-        .logo i {
-            color: var(--accent-color);
-            width: 22px;
-            height: 22px;
-        }
-
-        .logo h1 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #58a6ff 0%, #a371f7 50%, #f778ba 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            white-space: nowrap;
-        }
-
-        .file-name-display {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            padding: 0.3rem 0.7rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            max-width: 400px;
+        .file-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 60%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            transition: all 0.3s ease;
-        }
-
-        .file-name-display i {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-            color: var(--accent-color);
-        }
-
-        .file-name-display span {
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 16px;
         }
 
-        .btn {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.45rem 0.85rem;
-            border-radius: 6px;
-            font-size: 0.82rem;
-            font-weight: 500;
-            font-family: var(--font-ui);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid var(--border-color);
-            outline: none;
-            background: transparent;
-            color: var(--text-primary);
-        }
-
-        .btn i {
-            width: 15px;
-            height: 15px;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-            background: rgba(255, 255, 255, 0.06);
-            border-color: var(--text-secondary);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-accent {
-            background: rgba(88, 166, 255, 0.1);
-            border-color: rgba(88, 166, 255, 0.3);
-            color: var(--accent-color);
-        }
-
-        .btn-accent:hover {
-            background: rgba(88, 166, 255, 0.18);
-            border-color: var(--accent-color);
-        }
-
-        /* Encoding selector */
-        .encoding-wrap {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0 0.5rem;
-            height: 34px;
-            background: rgba(0, 0, 0, 0.15);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-        }
-
-        .encoding-wrap label {
-            display: flex;
-            align-items: center;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-
-        .encoding-wrap label i {
-            width: 14px;
-            height: 14px;
-        }
-
-        .encoding-wrap select {
+        .nav-btn {
             background: transparent;
             border: none;
-            color: var(--text-primary);
-            font-size: 0.8rem;
-            font-family: var(--font-ui);
+            color: var(--accent-color);
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .nav-btn:active {
+            background-color: rgba(120, 120, 128, 0.15);
+        }
+
+        .nav-btn i {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* ── iOS Segmented Control ── */
+        .segmented-control-container {
+            display: flex;
+            justify-content: center;
+            padding: 6px 16px 10px;
+        }
+
+        .segmented-control {
+            display: flex;
+            background: var(--segmented-bg);
+            padding: 2px;
+            border-radius: 9px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 6px 0;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-ui);
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
             outline: none;
         }
 
-        .encoding-wrap select option {
-            background: var(--surface-color);
-            color: var(--text-primary);
-        }
-
-        .separator {
-            width: 1px;
-            height: 20px;
-            background: var(--border-color);
+        .segment.active {
+            background: var(--segmented-active-bg);
+            color: var(--segmented-active-text);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         /* ── Main content area ── */
         .main-content {
             flex: 1;
+            position: relative;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             min-height: 0;
         }
 
-        /* ── Drop zone (initial state / overlay) ── */
-        .drop-zone {
+        /* ── iOS Welcome Screen ── */
+        .welcome-screen {
             flex: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
-            padding: 3rem;
-            transition: all 0.3s ease;
+            padding: 24px;
+            background-color: var(--bg-color);
         }
 
-        .drop-zone-inner {
+        .welcome-card {
             display: flex;
             flex-direction: column;
             align-items: center;
+            max-width: 340px;
+            text-align: center;
+            background: var(--content-bg);
+            border-radius: 20px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 16px var(--overlay-shadow);
+        }
+
+        .welcome-icon {
+            display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 1.5rem;
-            padding: 4rem 5rem;
-            border: 2px dashed var(--border-color);
-            border-radius: 16px;
-            background: var(--drop-bg);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .drop-zone-inner:hover {
-            border-color: var(--accent-color);
-            background: var(--glow-color);
-            box-shadow: 0 0 40px var(--glow-color);
-        }
-
-        .drop-zone-inner.dragging {
-            border-color: var(--accent-color);
-            background: var(--glow-color);
-            box-shadow: 0 0 60px var(--glow-color), inset 0 0 60px var(--glow-color);
-            transform: scale(1.02);
-        }
-
-        .drop-icon {
-            width: 64px;
-            height: 64px;
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            background: rgba(10, 132, 255, 0.15);
             color: var(--accent-color);
-            opacity: 0.6;
-            transition: all 0.3s ease;
+            margin-bottom: 20px;
         }
 
-        .drop-zone-inner:hover .drop-icon,
-        .drop-zone-inner.dragging .drop-icon {
-            opacity: 1;
-            transform: translateY(-4px);
+        .welcome-icon i {
+            width: 36px;
+            height: 36px;
         }
 
-        .drop-title {
-            font-size: 1.3rem;
-            font-weight: 600;
+        .welcome-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
             color: var(--text-primary);
-            text-align: center;
         }
 
-        .drop-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            text-align: center;
+        .welcome-subtitle {
+            font-size: 14px;
+            color: var(--text-tertiary);
             line-height: 1.5;
+            margin-bottom: 24px;
         }
 
-        .drop-or {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            width: 100%;
-        }
-
-        .drop-or::before,
-        .drop-or::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        .drop-btn {
+        .ios-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.65rem 1.5rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            justify-content: center;
+            gap: 8px;
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
             font-weight: 600;
             font-family: var(--font-ui);
             cursor: pointer;
-            border: none;
-            background: linear-gradient(135deg, #58a6ff 0%, #a371f7 100%);
-            color: white;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+            width: 100%;
+            transition: opacity 0.2s;
         }
 
-        .drop-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+        .ios-btn:active {
+            opacity: 0.8;
         }
 
-        .drop-btn:active {
-            transform: translateY(0);
+        .ios-btn i {
+            width: 20px;
+            height: 20px;
         }
 
-        .drop-btn i {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* ── Preview container ── */
-        .preview-wrapper {
+        /* ── Content Wrapper ── */
+        .content-wrapper {
             flex: 1;
-            display: none;
+            display: flex;
             flex-direction: column;
             overflow: hidden;
             min-height: 0;
+            background-color: var(--content-bg);
         }
 
-        .preview-wrapper.active {
-            display: flex;
-        }
-
+        /* ── Preview Container ── */
         .preview-container {
             flex: 1;
-            min-width: 0;
-            min-height: 0;
             overflow-x: auto;
             overflow-y: auto;
-            padding: 2rem 3rem;
-            background-color: #ffffff;
-            transition: background-color 0.3s ease;
+            padding: 24px 20px 48px;
+            background-color: var(--content-bg);
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* ── Mermaid Protection ── */
-        .mermaid-container {
-            background-color: #ffffff;
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif !important;
-        }
-
-        .mermaid-container text,
-        .mermaid-container tspan {
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif !important;
-            dominant-baseline: auto !important;
-            alignment-baseline: auto !important;
-            baseline-shift: normal !important;
-        }
-
-        .mermaid-container foreignObject,
-        .mermaid-container foreignObject div,
-        .mermaid-container foreignObject span,
-        .mermaid-container .nodeLabel,
-        .mermaid-container .edgeLabel,
-        .mermaid-container .label {
-            background-color: transparent;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-
-        /* ── Marp Slide Mode ── */
-        .preview-container.marp-mode {
-            background-color: #1a1a2e !important;
-            padding: 2rem !important;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .preview-container.marp-mode.markdown-body {
-            max-width: none;
-            line-height: normal;
-        }
-
-        .marp-slide-wrapper {
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            border-radius: 4px;
-            overflow: hidden;
-            flex-shrink: 0;
-            --slide-w: 1280;
-            --slide-h: 720;
-            width: calc(var(--slide-w) * 1px * var(--preview-scale, 1));
-            height: calc(var(--slide-h) * 1px * var(--preview-scale, 1));
-        }
-
-        .marp-slide-wrapper>section {
-            display: block !important;
-            position: absolute !important;
-            top: 0;
-            left: 0;
-            transform-origin: top left !important;
-            transform: scale(var(--preview-scale, 1)) !important;
-        }
-
-        .marp-slide-wrapper>svg {
-            width: 100% !important;
-            height: 100% !important;
-            display: block !important;
-        }
-
-        .marp-page-number {
-            text-align: center;
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: -0.8rem;
-            letter-spacing: 0.1em;
-        }
-
-        /* ── Markdown Body Styles (GitHub-like) ── */
-        .markdown-body {
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-            color: #24292f;
-            font-family: var(--font-ui);
-            line-height: 1.6;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        .markdown-body h1,
-        .markdown-body h2,
-        .markdown-body h3,
-        .markdown-body h4,
-        .markdown-body h5,
-        .markdown-body h6 {
-            margin-top: 24px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            line-height: 1.25;
-            color: #000000;
-        }
-
-        .markdown-body h1 {
-            font-size: 2em;
-            border-bottom: 1px solid #d0d7de;
-            padding-bottom: .3em;
-        }
-
-        .markdown-body h2 {
-            font-size: 1.5em;
-            border-bottom: 1px solid #d0d7de;
-            padding-bottom: .3em;
-        }
-
-        .markdown-body h3 {
-            font-size: 1.25em;
-        }
-
-        .markdown-body p,
-        .markdown-body blockquote,
-        .markdown-body ul,
-        .markdown-body ol,
-        .markdown-body dl,
-        .markdown-body table,
-        .markdown-body pre,
-        .markdown-body details {
-            margin-top: 0;
-            margin-bottom: 16px;
-        }
-
-        .markdown-body ul,
-        .markdown-body ol {
-            padding-left: 2em;
-        }
-
-        .markdown-body ol {
-            list-style-type: decimal;
-        }
-
-        .markdown-body ul {
-            list-style-type: disc;
-        }
-
-        .markdown-body li {
-            margin-top: 0.25em;
-        }
-
-        .markdown-body li>p {
-            margin-top: 16px;
-        }
-
-        .markdown-body li+li {
-            margin-top: 0.25em;
-        }
-
-        .markdown-body ul ul,
-        .markdown-body ul ol,
-        .markdown-body ol ul,
-        .markdown-body ol ol {
-            margin-top: 0;
-            margin-bottom: 0;
-        }
-
-        .markdown-body ul ul {
-            list-style-type: circle;
-        }
-
-        .markdown-body ul ul ul {
-            list-style-type: square;
-        }
-
-        .markdown-body .contains-task-list {
-            list-style-type: none;
-            padding-left: 1.5em;
-        }
-
-        .markdown-body .task-list-item input[type="checkbox"] {
-            margin: 0 0.35em 0 -1.4em;
-            vertical-align: middle;
-            cursor: default;
-        }
-
-        .markdown-body hr {
-            height: 0.25em;
-            padding: 0;
-            margin: 24px 0;
-            background-color: #d0d7de;
-            border: 0;
-            border-radius: 2px;
-        }
-
-        .markdown-body dl dt {
-            font-weight: 600;
-            margin-top: 16px;
-        }
-
-        .markdown-body dl dd {
-            padding-left: 16px;
-            margin-bottom: 16px;
-        }
-
-        .markdown-body a {
-            color: #0969da;
-            text-decoration: none;
-        }
-
-        .markdown-body a:hover {
-            text-decoration: underline;
-        }
-
-        .markdown-body pre {
-            padding: 16px;
-            overflow-x: auto;
-            overflow-y: visible;
-            max-width: 100%;
-            white-space: pre;
-            word-wrap: normal;
-            font-size: 85%;
-            line-height: 1.45;
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        .markdown-body code {
-            font-family: var(--font-mono);
-            padding: .2em .4em;
-            margin: 0;
-            font-size: 85%;
-            background-color: rgba(175, 184, 193, 0.2);
-            color: #24292f;
-            border-radius: 6px;
-        }
-
-        .markdown-body pre code {
-            padding: 0;
-            margin: 0;
-            font-size: 100%;
-            background-color: transparent;
-            border: 0;
-        }
-
-        .markdown-body blockquote {
-            padding: 0 1em;
-            color: #57606a;
-            border-left: .25em solid #d0d7de;
-        }
-
-        .markdown-body img {
-            max-width: 100%;
-            width: auto;
-            height: auto;
-            display: block;
-            box-sizing: content-box;
-            background-color: #ffffff;
-        }
-
-        .markdown-body table {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            overflow: auto;
-            border-collapse: collapse;
-        }
-
-        .markdown-body table th,
-        .markdown-body table td {
-            padding: 6px 13px;
-            border: 1px solid #d0d7de;
-        }
-
-        .markdown-body table tr {
-            background-color: #ffffff;
-            border-top: 1px solid #d0d7de;
-        }
-
-        .markdown-body table tr:nth-child(2n) {
-            background-color: #f6f8fa;
-        }
-
-        .markdown-body iframe,
-        .markdown-body video,
-        .markdown-body embed,
-        .markdown-body object {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .markdown-body svg {
-            max-width: 100%;
-            height: auto;
-        }
-
-        .markdown-body>* {
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* ── Drag overlay ── */
-        .drag-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .drag-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .drag-overlay-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-            padding: 3rem 5rem;
-            border: 3px dashed var(--accent-color);
-            border-radius: 20px;
-            background: var(--glow-color);
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 30px var(--glow-color); }
-            50% { box-shadow: 0 0 60px var(--glow-color); }
-        }
-
-        .drag-overlay-content i {
-            width: 56px;
-            height: 56px;
-            color: var(--accent-color);
-        }
-
-        .drag-overlay-content p {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        /* ── Toast notification ── */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            padding: 0.7rem 1.5rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            font-family: var(--font-ui);
-            background: var(--surface-color);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            z-index: 200;
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        .toast i {
-            width: 16px;
-            height: 16px;
-            color: #3fb950;
-        }
-
-        .toast.error i {
-            color: #f85149;
-        }
-
-        /* ── Mode Switcher ── */
-        .mode-switcher {
-            display: none;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 3px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .mode-switcher.visible {
-            display: flex;
-        }
-
-        .mode-btn {
-            padding: 5px 14px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            font-family: var(--font-ui);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            background: transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            white-space: nowrap;
-        }
-
-        .mode-btn i {
-            width: 14px;
-            height: 14px;
-        }
-
-        .mode-btn.active {
-            background: var(--accent-color);
-            color: white;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-        }
-
-        .mode-btn:not(.active):hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        /* ── Raw Markdown View ── */
+        /* ── Raw View (Markdown Code View) ── */
         .raw-container {
             flex: 1;
-            min-width: 0;
-            min-height: 0;
             overflow-x: auto;
             overflow-y: auto;
-            padding: 2rem 2.5rem;
-            background-color: #0d1117;
+            padding: 24px 20px 48px;
+            background-color: var(--code-block-bg);
             display: none;
+            -webkit-overflow-scrolling: touch;
         }
 
         .raw-container.active {
             display: block;
         }
 
-        .raw-container pre {
-            margin: 0;
-            padding: 0;
-            background: transparent;
-            border: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        .raw-container pre code {
-            font-family: var(--font-mono);
-            font-size: 14px;
-            line-height: 1.7;
-            color: #e6edf3;
-            background: transparent;
-            padding: 0;
-            border: none;
-            tab-size: 4;
-        }
-
-        /* Line numbers for raw view */
         .raw-line {
             display: flex;
-            min-height: 1.7em;
-        }
-
-        .raw-line:hover {
-            background: rgba(88, 166, 255, 0.06);
+            min-height: 1.5em;
         }
 
         .raw-line-num {
             flex-shrink: 0;
-            width: 50px;
+            width: 44px;
             text-align: right;
-            padding-right: 16px;
-            color: #484f58;
+            padding-right: 12px;
+            color: var(--text-tertiary);
             font-family: var(--font-mono);
             font-size: 13px;
-            line-height: 1.7;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -929,351 +347,481 @@
             min-width: 0;
             font-family: var(--font-mono);
             font-size: 14px;
-            line-height: 1.7;
-            color: #e6edf3;
+            line-height: 1.5;
+            color: var(--text-primary);
             white-space: pre-wrap;
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
 
-        /* Hide preview container when raw is active */
-        .preview-wrapper .preview-container.hidden {
-            display: none;
-        }
-
-        /* ── Print styles ── */
-        @media print {
-            .glass-header, .drop-zone, .drag-overlay, .toast {
-                display: none !important;
-            }
-            .preview-wrapper {
-                display: flex !important;
-            }
-            .preview-container {
-                overflow: visible !important;
-                padding: 0 !important;
-            }
-            .raw-container {
-                overflow: visible !important;
-            }
-            body {
-                overflow: visible !important;
-            }
-        }
-
-        /* ── Settings Modal & Cloud Buttons ── */
-        .btn-google {
-            background: rgba(219, 68, 85, 0.1);
-            border-color: rgba(219, 68, 85, 0.3);
-            color: #ea4335;
-        }
-
-        .btn-google:hover {
-            background: rgba(219, 68, 85, 0.18);
-            border-color: #ea4335;
-        }
-
-        .drop-btn-google {
-            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
-            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
-        }
-
-        .drop-btn-google:hover {
-            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
-        }
-
-        /* Modal styling */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 300;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+        /* ── Markdown Body (GitHub-like) ── */
+        .markdown-body {
             width: 100%;
-            max-width: 480px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            transform: scale(0.95);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: hidden;
+            max-width: 100%;
             color: var(--text-primary);
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        .modal-overlay.active .modal-card {
-            transform: scale(1);
-        }
-
-        .modal-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
-            font-size: 1.05rem;
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4 {
+            margin-top: 24px;
+            margin-bottom: 12px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .modal-title i {
-            color: var(--accent-color);
-            width: 20px;
-            height: 20px;
-        }
-
-        .modal-close {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.2rem;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
+            line-height: 1.25;
             color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 0.5px solid var(--border-color);
+            padding-bottom: .3em;
         }
 
-        .modal-body {
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
+        .markdown-body h1 { font-size: 1.8em; }
+        .markdown-body h2 { font-size: 1.4em; }
+        .markdown-body h3 { font-size: 1.2em; border-bottom: none; padding-bottom: 0; }
+
+        .markdown-body p,
+        .markdown-body blockquote,
+        .markdown-body ul,
+        .markdown-body ol,
+        .markdown-body table,
+        .markdown-body pre {
+            margin-top: 0;
+            margin-bottom: 14px;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 20px;
         }
 
-        .form-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+        .markdown-body li {
+            margin-top: 0.25em;
         }
 
-        .form-input {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.55rem 0.75rem;
-            color: var(--text-primary);
-            font-family: var(--font-mono);
-            font-size: 0.82rem;
-            outline: none;
-            transition: border-color 0.2s;
-            width: 100%;
-            box-sizing: border-box;
+        .markdown-body .contains-task-list {
+            list-style-type: none;
+            padding-left: 12px;
         }
 
-        .form-input:focus {
-            border-color: var(--accent-color);
+        .markdown-body .task-list-item input[type="checkbox"] {
+            margin: 0 0.35em 0 -1.2em;
+            vertical-align: middle;
         }
 
-        .form-help {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            line-height: 1.4;
+        .markdown-body hr {
+            height: 1px;
+            background-color: var(--border-color);
+            border: 0;
+            margin: 20px 0;
         }
 
-        .form-help a {
+        .markdown-body a {
             color: var(--accent-color);
             text-decoration: none;
         }
 
-        .form-help a:hover {
-            text-decoration: underline;
+        .markdown-body pre {
+            position: relative;
+            padding: 16px;
+            overflow-x: auto;
+            background-color: var(--code-block-bg);
+            border-radius: 10px;
+            margin: 12px 0;
         }
 
-        .modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
+        .markdown-body code {
+            font-family: var(--font-mono);
+            padding: .2em .4em;
+            font-size: 85%;
+            background-color: rgba(120, 120, 128, 0.15);
+            border-radius: 6px;
+        }
+
+        .markdown-body pre code {
+            padding: 0;
+            background-color: transparent;
+            font-size: 90%;
+        }
+
+        .markdown-body blockquote {
+            padding: 0 12px;
+            color: var(--text-secondary);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .markdown-body table {
+            display: block;
+            width: 100%;
+            overflow: auto;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+
+        .markdown-body table th,
+        .markdown-body table td {
+            padding: 8px 12px;
+            border: 0.5px solid var(--border-color);
+        }
+
+        .markdown-body table tr {
+            background-color: var(--content-bg);
+            border-top: 0.5px solid var(--border-color);
+        }
+
+        .markdown-body table tr:nth-child(2n) {
+            background-color: var(--bg-color);
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        /* ── Code Copy Button (Floating) ── */
+        .code-copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(120, 120, 128, 0.15);
+            border: none;
+            cursor: pointer;
             display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-            background: rgba(0, 0, 0, 0.1);
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            transition: all 0.2s;
+            opacity: 0.7;
         }
 
-        /* ── Responsive styles for mobile ── */
-        @media (max-width: 768px) {
-            .glass-header {
-                padding: 0.5rem 0.8rem;
-                gap: 0.4rem;
-            }
-
-            .logo h1 {
-                display: none; /* モバイルではロゴ文字を非表示にしてアイコンのみにする */
-            }
-
-            .file-name-display {
-                max-width: 110px; /* ファイル名表示幅を縮小 */
-            }
-
-            .btn-text {
-                display: none; /* 各ボタンのテキストを非表示にしてアイコン化 */
-            }
-
-            .btn {
-                padding: 0.45rem; /* ボタンの余白を狭める */
-                gap: 0;
-            }
-
-            .mode-btn {
-                padding: 5px 8px; /* スイッチャーもコンパクトに */
-                gap: 0;
-            }
-
-            .encoding-wrap {
-                display: none; /* 文字コード選択はモバイルでは非表示に */
-            }
+        .code-copy-btn:active {
+            opacity: 1;
+            transform: scale(0.9);
         }
 
-        @media (max-width: 480px) {
-            .preview-container {
-                padding: 1rem 1.2rem; /* モバイルでのプレビュー表示の余白を最適化 */
-            }
-            .raw-container {
-                padding: 1rem 1.2rem;
-            }
-            .raw-line-num {
-                width: 35px;
-                padding-right: 8px;
-            }
+        .code-copy-btn i {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── Search Bar Panel (Safari Style Bottom) ── */
+        .search-bar-panel {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 480px;
+            background: var(--search-bg);
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 0.5px solid var(--border-color);
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 8px 32px var(--overlay-shadow);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-bar-panel.show {
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            transform: translateX(-50%);
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(120, 120, 128, 0.12);
+            border-radius: 10px;
+            padding: 6px 10px;
+            width: 100%;
+        }
+
+        .search-bar-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--text-tertiary);
+            margin-right: 8px;
+        }
+
+        .search-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 15px;
+            outline: none;
+        }
+
+        .search-clear-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .search-clear-btn i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .search-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 4px 0;
+        }
+
+        .search-results-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .search-control-buttons {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+
+        .search-nav-btn[disabled] {
+            color: var(--text-tertiary);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .search-nav-btn i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-done-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 15px;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            cursor: pointer;
+        }
+
+        /* ── Search Highlight Marks ── */
+        mark.search-match {
+            background-color: rgba(255, 235, 59, 0.4);
+            color: inherit;
+            border-bottom: 1px dashed orange;
+            border-radius: 2px;
+        }
+
+        mark.search-match.current-match {
+            background-color: #ffc107;
+            color: #000000;
+            box-shadow: 0 0 4px #ffc107;
+        }
+
+        /* ── Toast Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(44, 44, 46, 0.9);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            z-index: 200;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast i {
+            width: 18px;
+            height: 18px;
+            color: #30d158; /* iOS green */
+        }
+
+        .toast.error i {
+            color: #ff453a; /* iOS red */
+        }
+
+        /* ── Mermaid Integration ── */
+        .mermaid-container {
+            background-color: #ffffff;
+            font-family: var(--font-ui) !important;
+            border-radius: 8px;
+            padding: 12px;
+            border: 0.5px solid var(--border-color);
+        }
+
+        /* ── Marp slide styles ── */
+        .preview-container.marp-mode {
+            background-color: #1c1c1e !important;
+            padding: 16px !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .marp-slide-wrapper {
+            position: relative;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+            --slide-w: 1280;
+            --slide-h: 720;
+            width: calc(var(--slide-w) * 1px * var(--preview-scale, 1));
+            height: calc(var(--slide-h) * 1px * var(--preview-scale, 1));
+        }
+
+        .marp-slide-wrapper > section {
+            display: block !important;
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            transform-origin: top left !important;
+            transform: scale(var(--preview-scale, 1)) !important;
+        }
+
+        .marp-slide-wrapper > svg {
+            width: 100% !important;
+            height: 100% !important;
+            display: block !important;
+        }
+
+        .marp-page-number {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: -8px;
+            letter-spacing: 0.1em;
         }
     </style>
 </head>
 
 <body>
     <div class="app-container">
-        <!-- Header -->
-        <header class="glass-header" id="glass-header">
-            <div class="header-left">
-                <div class="logo">
-                    <i data-lucide="book-open"></i>
-                    <h1>Markdown Viewer</h1>
-                </div>
-                <div class="file-name-display" id="file-name-display" style="display: none;">
-                    <i data-lucide="file-text"></i>
-                    <span id="file-name-text">ファイル名</span>
-                </div>
-                <div class="mode-switcher" id="mode-switcher">
-                    <button class="mode-btn active" data-mode="preview" id="btn-mode-preview">
-                        <i data-lucide="eye"></i>
-                        <span class="btn-text">プレビュー</span>
+        <!-- iOS Glass Navigation Bar -->
+        <header class="glass-header">
+            <div class="nav-title-row">
+                <span class="file-name" id="file-name-text">Markdown Viewer</span>
+                <div class="header-right">
+                    <!-- Text Search Toggle -->
+                    <button class="nav-btn" id="btn-search-toggle" style="display: none;" title="検索">
+                        <i data-lucide="search"></i>
                     </button>
-                    <button class="mode-btn" data-mode="raw" id="btn-mode-raw">
-                        <i data-lucide="code-2"></i>
-                        <span class="btn-text">Markdown</span>
+                    <!-- Copy Entire Doc -->
+                    <button class="nav-btn" id="btn-copy-all" style="display: none;" title="すべてコピー">
+                        <i data-lucide="copy"></i>
+                    </button>
+                    <!-- Native Open Button (Fallback) -->
+                    <button class="nav-btn" id="btn-open-nav" title="ファイルを開く">
+                        <i data-lucide="folder-open"></i>
                     </button>
                 </div>
             </div>
-            <div class="header-right">
-                <div class="encoding-wrap">
-                    <label for="encoding-select" title="読み込み時の文字コード">
-                        <i data-lucide="languages"></i>
-                    </label>
-                    <select id="encoding-select">
-                        <option value="UTF-8">UTF-8</option>
-                        <option value="Shift_JIS">Shift_JIS</option>
-                        <option value="EUC-JP">EUC-JP</option>
-                    </select>
+            <!-- Segmented Control (only when file loaded) -->
+            <div class="segmented-control-container" id="segmented-container" style="display: none;">
+                <div class="segmented-control">
+                    <button class="segment active" data-mode="preview" id="segment-preview">プレビュー</button>
+                    <button class="segment" data-mode="raw" id="segment-raw">ソースコード</button>
                 </div>
-                <button class="btn btn-google" id="btn-google-open" title="Googleドライブから開く">
-                    <i data-lucide="hard-drive"></i>
-                    <span class="btn-text">Googleドライブ</span>
-                </button>
-                <button class="btn btn-accent" id="btn-open" title="ファイルを開く">
-                    <i data-lucide="folder-open"></i>
-                    <span class="btn-text">ファイルを開く</span>
-                </button>
-                <div class="separator"></div>
-                <button class="btn" id="btn-copy" title="Markdownをコピー" style="display: none;">
-                    <i data-lucide="copy"></i>
-                    <span class="btn-text">コピー</span>
-                </button>
-                <button class="btn" id="btn-print" title="印刷" style="display: none;">
-                    <i data-lucide="printer"></i>
-                    <span class="btn-text">印刷</span>
-                </button>
-                <button class="btn" id="btn-settings" title="設定">
-                    <i data-lucide="settings"></i>
-                </button>
             </div>
         </header>
 
-        <!-- Main content -->
-        <div class="main-content">
-            <!-- Drop zone (initial) -->
-            <div class="drop-zone" id="drop-zone">
-                <div class="drop-zone-inner" id="drop-zone-inner">
-                    <i data-lucide="file-down" class="drop-icon"></i>
-                    <div class="drop-title">Markdownファイルをドロップ</div>
-                    <div class="drop-subtitle">
-                        .md ファイルをここにドラッグ＆ドロップしてプレビュー表示します
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Landing / Welcome screen -->
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <i data-lucide="book-open"></i>
                     </div>
-                    <div class="drop-or">または</div>
-                    <div style="display: flex; gap: 0.8rem; width: 100%; justify-content: center; flex-wrap: wrap;">
-                        <button class="drop-btn" id="drop-btn-open">
-                            <i data-lucide="folder-open"></i>
-                            ファイルを選択
-                        </button>
-                        <button class="drop-btn drop-btn-google" id="drop-btn-google-open">
-                            <i data-lucide="hard-drive"></i>
-                            Googleドライブ
-                        </button>
-                    </div>
+                    <h2 class="welcome-title">Markdown Viewer</h2>
+                    <p class="welcome-subtitle">
+                        Markdown文書、Mermaid図、Marpスライドのレンダリングに対応した高機能ビューワーです。
+                    </p>
+                    <button class="ios-btn" id="welcome-open-btn">
+                        <i data-lucide="folder-open"></i>
+                        <span>ファイルを選択</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Preview (hidden initially) -->
-            <div class="preview-wrapper" id="preview-wrapper">
+            <!-- Content Container -->
+            <div class="content-wrapper" id="content-wrapper" style="display: none;">
                 <div class="preview-container markdown-body" id="preview-content">
-                    <!-- Rendered markdown goes here -->
+                    <!-- Rendered markdown -->
                 </div>
                 <div class="raw-container" id="raw-content">
-                    <!-- Raw markdown text goes here -->
+                    <!-- Line-numbered raw code -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Safari-like Floating Search Bar -->
+        <div class="search-bar-panel" id="search-panel">
+            <div class="search-input-wrapper">
+                <i data-lucide="search" class="search-bar-icon"></i>
+                <input type="text" id="search-input" placeholder="ページ内を検索..." autocomplete="off">
+                <button class="search-clear-btn" id="search-clear" style="display: none;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="search-controls">
+                <span class="search-results-count" id="search-count">0 / 0</span>
+                <div class="search-control-buttons">
+                    <button class="search-nav-btn" id="search-prev" disabled>
+                        <i data-lucide="chevron-up"></i>
+                    </button>
+                    <button class="search-nav-btn" id="search-next" disabled>
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <button class="search-done-btn" id="search-done">完了</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Drag overlay (when file is dragged over entire window) -->
-    <div class="drag-overlay" id="drag-overlay">
-        <div class="drag-overlay-content">
-            <i data-lucide="file-down"></i>
-            <p>ここにドロップしてプレビュー</p>
-        </div>
-    </div>
+    <!-- Hidden file input (for fallback) -->
+    <input type="file" id="file-input" accept=".md,.markdown,.txt" style="display: none;">
 
     <!-- Toast notification -->
     <div class="toast" id="toast">
@@ -1281,100 +829,60 @@
         <span id="toast-text"></span>
     </div>
 
-    <!-- Hidden file input -->
-    <input type="file" id="file-input" accept=".md,.markdown,.txt" style="display: none;">
-
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div class="modal-title">
-                    <i data-lucide="settings"></i>
-                    <span>外部ドライブ連携設定</span>
-                </div>
-                <button class="modal-close" id="btn-close-settings">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label" for="setting-google-api-key">Google API キー</label>
-                    <input class="form-input" type="password" id="setting-google-api-key" placeholder="AIzaSy...">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="setting-google-client-id">Google OAuth クライアントID</label>
-                    <input class="form-input" type="text" id="setting-google-client-id" placeholder="xxxx.apps.googleusercontent.com">
-                </div>
-                <div class="form-help">
-                    <strong>設定方法:</strong> Google Cloud Console でプロジェクトを作成し、Google Picker APIを有効化して認証情報を取得してください。JavaScript生成元として <code>https://&lt;username&gt;.github.io</code>（またはお使いのドメイン）を許可する必要があります。
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btn-cancel-settings">キャンセル</button>
-                <button class="btn btn-accent" id="btn-save-settings">保存</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Marp style injection -->
+    <!-- Marp dynamic styles -->
     <style id="marp-style"></style>
 
     <script>
         // ============================================================
         // DOM refs
         // ============================================================
-        const dropZone = document.getElementById('drop-zone');
-        const dropZoneInner = document.getElementById('drop-zone-inner');
-        const previewWrapper = document.getElementById('preview-wrapper');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const contentWrapper = document.getElementById('content-wrapper');
         const previewContainer = document.getElementById('preview-content');
         const rawContainer = document.getElementById('raw-content');
-        const dragOverlay = document.getElementById('drag-overlay');
-        const fileInput = document.getElementById('file-input');
-        const fileNameDisplay = document.getElementById('file-name-display');
+        
         const fileNameText = document.getElementById('file-name-text');
+        const segmentedContainer = document.getElementById('segmented-container');
+        const segmentPreview = document.getElementById('segment-preview');
+        const segmentRaw = document.getElementById('segment-raw');
+        
+        const btnOpenNav = document.getElementById('btn-open-nav');
+        const welcomeOpenBtn = document.getElementById('welcome-open-btn');
+        const fileInput = document.getElementById('file-input');
+        
+        const btnSearchToggle = document.getElementById('btn-search-toggle');
+        const btnCopyAll = document.getElementById('btn-copy-all');
+        
+        // Search panel elements
+        const searchPanel = document.getElementById('search-panel');
+        const searchInput = document.getElementById('search-input');
+        const searchClear = document.getElementById('search-clear');
+        const searchCount = document.getElementById('search-count');
+        const searchPrev = document.getElementById('search-prev');
+        const searchNext = document.getElementById('search-next');
+        const searchDone = document.getElementById('search-done');
+        
         const toastEl = document.getElementById('toast');
         const toastText = document.getElementById('toast-text');
-        const btnOpen = document.getElementById('btn-open');
-        const dropBtnOpen = document.getElementById('drop-btn-open');
-        const btnPrint = document.getElementById('btn-print');
-        const btnCopy = document.getElementById('btn-copy');
-        const modeSwitcher = document.getElementById('mode-switcher');
-        const btnModePreview = document.getElementById('btn-mode-preview');
-        const btnModeRaw = document.getElementById('btn-mode-raw');
-        const encodingSelect = document.getElementById('encoding-select');
-
-        // Settings & Google Drive DOM refs
-        const btnSettings = document.getElementById('btn-settings');
-        const settingsModal = document.getElementById('settings-modal');
-        const btnCloseSettings = document.getElementById('btn-close-settings');
-        const btnCancelSettings = document.getElementById('btn-cancel-settings');
-        const btnSaveSettings = document.getElementById('btn-save-settings');
-        const settingGoogleApiKey = document.getElementById('setting-google-api-key');
-        const settingGoogleClientId = document.getElementById('setting-google-client-id');
-        const btnGoogleOpen = document.getElementById('btn-google-open');
-        const dropBtnGoogleOpen = document.getElementById('drop-btn-google-open');
+        const marpStyleTag = document.getElementById('marp-style');
 
         let currentFileName = '';
-        let currentRawText = ''; // 生テキストを保持
-        let currentViewMode = 'preview'; // 'preview' or 'raw'
-
-        // Google API integration states
-        let googleApiKey = '';
-        let googleClientId = '';
-        let gapiInited = false;
-        let gisInited = false;
-        let tokenClient = null;
-        let accessToken = null;
+        let currentRawText = '';
+        let currentViewMode = 'preview'; // 'preview' | 'raw'
+        
+        // Search states
+        let searchMatches = [];
+        let currentMatchIndex = -1;
 
         // ============================================================
-        // Marp Slide Themes (Built-in engine)
+        // Marp Slide Themes & Engine
         // ============================================================
         const MARP_THEMES = {
             default: `
                 section {
                     width: 1280px; height: 720px; padding: 70px 80px;
                     background: #fff; color: #333;
-                    font-family: 'Inter', 'Meiryo', sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
                     font-size: 32px; line-height: 1.5;
                     display: flex; flex-direction: column;
                     justify-content: flex-start; align-items: flex-start;
@@ -1382,31 +890,22 @@
                     position: relative;
                 }
                 section.lead { justify-content: center; align-items: center; text-align: center; }
-                h1 { font-size: 1.6em; color: #1a1a2e; border-bottom: 3px solid #58a6ff; padding-bottom: 0.3em; margin: 0 0 0.5em; width: 100%; }
-                h2 { font-size: 1.3em; color: #1a1a2e; margin: 0 0 0.4em; }
-                h3 { font-size: 1.1em; color: #555; margin: 0 0 0.3em; }
+                h1 { font-size: 1.6em; color: #007aff; border-bottom: 3px solid #007aff; padding-bottom: 0.3em; margin: 0 0 0.5em; width: 100%; }
+                h2 { font-size: 1.3em; color: #1c1c1e; margin: 0 0 0.4em; }
                 p { margin: 0.3em 0; font-size: 0.85em; }
                 ul, ol { margin: 0.3em 0 0.3em 1.2em; padding: 0; }
                 li { margin: 0.2em 0; font-size: 0.82em; }
-                strong { color: #0969da; }
-                em { color: #6f42c1; }
-                code { background: #f0f4f8; border: 1px solid #d0d7de; border-radius: 4px; padding: 1px 6px; font-family: 'Fira Code', monospace; font-size: 0.78em; color: #c9105a; }
-                pre { background: #1a1a2e; border-radius: 8px; padding: 1em 1.2em; width: 100%; box-sizing: border-box; overflow: hidden; margin: 0.5em 0; }
-                pre code { background: transparent; border: none; color: #a5d6ff; font-size: 0.72em; padding: 0; }
-                blockquote { border-left: 4px solid #58a6ff; margin: 0.5em 0; padding: 0.3em 0 0.3em 1em; color: #555; font-style: italic; }
-                table { border-collapse: collapse; width: 100%; font-size: 0.75em; margin: 0.5em 0; }
-                th { background: #1a1a2e; color: #fff; padding: 8px 12px; }
-                td { border: 1px solid #d0d7de; padding: 6px 12px; }
-                tr:nth-child(even) td { background: #f6f8fa; }
-                img { max-width: 100%; max-height: 60%; object-fit: contain; }
+                strong { color: #007aff; }
+                code { background: #f2f2f7; border-radius: 4px; padding: 2px 6px; font-family: monospace; font-size: 0.78em; color: #ff2d55; }
+                pre { background: #1c1c1e; border-radius: 8px; padding: 1em; width: 100%; box-sizing: border-box; overflow: hidden; margin: 0.5em 0; }
+                pre code { background: transparent; color: #a5d6ff; font-size: 0.72em; }
                 .page-number { position: absolute; bottom: 20px; right: 30px; font-size: 0.55em; color: #aaa; }
-                .header-bar { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #58a6ff, #a371f7); }
             `,
             gaia: `
                 section {
                     width: 1280px; height: 720px; padding: 70px 80px;
-                    background: #1a1a2e; color: #e6edf3;
-                    font-family: 'Inter', 'Meiryo', sans-serif;
+                    background: #1c1c1e; color: #e5e5ea;
+                    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
                     font-size: 32px; line-height: 1.5;
                     display: flex; flex-direction: column;
                     justify-content: flex-start; align-items: flex-start;
@@ -1414,63 +913,35 @@
                     position: relative;
                 }
                 section.lead { justify-content: center; align-items: center; text-align: center; }
-                h1 { font-size: 1.6em; color: #58a6ff; border-bottom: 3px solid #a371f7; padding-bottom: 0.3em; margin: 0 0 0.5em; width: 100%; }
-                h2 { font-size: 1.3em; color: #79c0ff; margin: 0 0 0.4em; }
-                h3 { font-size: 1.1em; color: #a5d6ff; margin: 0 0 0.3em; }
-                p { margin: 0.3em 0; font-size: 0.85em; color: #c9d1d9; }
-                ul, ol { margin: 0.3em 0 0.3em 1.2em; padding: 0; }
-                li { margin: 0.2em 0; font-size: 0.82em; color: #c9d1d9; }
-                strong { color: #ffa657; }
-                em { color: #d2a8ff; }
-                code { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 1px 6px; font-family: 'Fira Code', monospace; font-size: 0.78em; color: #79c0ff; }
-                pre { background: #0d1117; border-radius: 8px; padding: 1em 1.2em; width: 100%; box-sizing: border-box; overflow: hidden; margin: 0.5em 0; border: 1px solid #30363d; }
-                pre code { background: transparent; color: #e6edf3; font-size: 0.72em; padding: 0; }
-                blockquote { border-left: 4px solid #58a6ff; margin: 0.5em 0; padding: 0.3em 0 0.3em 1em; color: #8b949e; font-style: italic; }
-                table { border-collapse: collapse; width: 100%; font-size: 0.75em; margin: 0.5em 0; }
-                th { background: #0d1117; color: #58a6ff; padding: 8px 12px; border-bottom: 2px solid #30363d; }
-                td { border: 1px solid #30363d; padding: 6px 12px; color: #c9d1d9; }
-                tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
-                img { max-width: 100%; max-height: 60%; object-fit: contain; }
+                h1 { font-size: 1.6em; color: #0a84ff; border-bottom: 3px solid #30d158; padding-bottom: 0.3em; margin: 0 0 0.5em; width: 100%; }
+                h2 { font-size: 1.3em; color: #ffffff; margin: 0 0 0.4em; }
+                p { margin: 0.3em 0; font-size: 0.85em; }
+                strong { color: #ff9f0a; }
+                code { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 6px; font-family: monospace; font-size: 0.78em; color: #0a84ff; }
+                pre { background: #000; border-radius: 8px; padding: 1em; width: 100%; box-sizing: border-box; overflow: hidden; }
+                pre code { background: transparent; color: #ffffff; font-size: 0.72em; }
                 .page-number { position: absolute; bottom: 20px; right: 30px; font-size: 0.55em; color: #555; }
-                .header-bar { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #1f6feb, #a371f7); }
             `,
             uncover: `
                 section {
                     width: 1280px; height: 720px; padding: 70px 80px;
                     background: #f8fafc; color: #1e293b;
-                    font-family: 'Inter', 'Meiryo', sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
                     font-size: 32px; line-height: 1.5;
                     display: flex; flex-direction: column;
                     justify-content: flex-start; align-items: flex-start;
                     box-sizing: border-box; overflow: hidden;
                     position: relative;
-                    border-left: 8px solid #3b82f6;
+                    border-left: 8px solid #007aff;
                 }
-                section.lead { justify-content: center; align-items: center; text-align: center; border-left: none; border-top: 8px solid #3b82f6; }
-                h1 { font-size: 1.6em; color: #1e293b; font-weight: 800; margin: 0 0 0.5em; letter-spacing: -0.02em; }
-                h2 { font-size: 1.3em; color: #334155; font-weight: 700; margin: 0 0 0.4em; }
-                h3 { font-size: 1.1em; color: #475569; margin: 0 0 0.3em; }
-                p { margin: 0.3em 0; font-size: 0.85em; color: #475569; }
-                ul, ol { margin: 0.3em 0 0.3em 1.2em; padding: 0; }
-                li { margin: 0.2em 0; font-size: 0.82em; color: #475569; }
-                strong { color: #3b82f6; font-weight: 700; }
-                em { color: #8b5cf6; }
-                code { background: #e2e8f0; border-radius: 4px; padding: 1px 6px; font-family: 'Fira Code', monospace; font-size: 0.78em; color: #be185d; }
-                pre { background: #1e293b; border-radius: 8px; padding: 1em 1.2em; width: 100%; box-sizing: border-box; overflow: hidden; margin: 0.5em 0; }
-                pre code { background: transparent; color: #e2e8f0; font-size: 0.72em; padding: 0; }
-                blockquote { border-left: 4px solid #3b82f6; margin: 0.5em 0; padding: 0.3em 0 0.3em 1em; color: #64748b; font-style: italic; background: #f1f5f9; }
-                table { border-collapse: collapse; width: 100%; font-size: 0.75em; margin: 0.5em 0; }
-                th { background: #3b82f6; color: #fff; padding: 8px 12px; }
-                td { border: 1px solid #e2e8f0; padding: 6px 12px; }
-                tr:nth-child(even) td { background: #f8fafc; }
-                img { max-width: 100%; max-height: 60%; object-fit: contain; }
+                section.lead { justify-content: center; align-items: center; text-align: center; border-left: none; border-top: 8px solid #007aff; }
+                h1 { font-size: 1.6em; color: #1e293b; font-weight: 800; margin: 0 0 0.5em; }
+                p { margin: 0.3em 0; font-size: 0.85em; }
+                strong { color: #007aff; }
                 .page-number { position: absolute; bottom: 20px; right: 30px; font-size: 0.55em; color: #94a3b8; }
             `
         };
 
-        // ============================================================
-        // Marp Built-in Engine
-        // ============================================================
         class MarpEngine {
             parseFrontmatter(markdown) {
                 const fm = { marp: false, theme: 'default', size: '16:9', paginate: false, header: '', footer: '' };
@@ -1479,16 +950,16 @@
                 const body = markdown.slice(match[0].length);
                 const lines = match[1].split('\n');
                 for (const line of lines) {
-                    const [key, ...vals] = line.split(':');
-                    const val = vals.join(':').trim();
-                    if (!key) continue;
-                    const k = key.trim().toLowerCase();
-                    if (k === 'marp') fm.marp = val === 'true';
-                    else if (k === 'theme') fm.theme = val;
-                    else if (k === 'size') fm.size = val;
-                    else if (k === 'paginate') fm.paginate = val === 'true';
-                    else if (k === 'header') fm.header = val;
-                    else if (k === 'footer') fm.footer = val;
+                    const parts = line.split(':');
+                    if (parts.length < 2) continue;
+                    const key = parts[0].trim().toLowerCase();
+                    const val = parts.slice(1).join(':').trim();
+                    if (key === 'marp') fm.marp = val === 'true';
+                    else if (key === 'theme') fm.theme = val;
+                    else if (key === 'size') fm.size = val;
+                    else if (key === 'paginate') fm.paginate = val === 'true';
+                    else if (key === 'header') fm.header = val;
+                    else if (key === 'footer') fm.footer = val;
                 }
                 return { frontmatter: fm, body };
             }
@@ -1530,24 +1001,21 @@
                 const htmlContent = marked.parse(content);
                 const classes = ['marp-slide-inner', directives.class].filter(Boolean).join(' ');
                 let inlineStyle = '';
-                if (directives.backgroundColor) inlineStyle += 'background-color:' + directives.backgroundColor + ';';
-                if (directives.color) inlineStyle += 'color:' + directives.color + ';';
+                if (directives.backgroundColor) inlineStyle += `background-color:${directives.backgroundColor};`;
+                if (directives.color) inlineStyle += `color:${directives.color};`;
 
                 let extras = '';
-                if (index === 0 && MARP_THEMES[fm.theme] !== MARP_THEMES.gaia) {
-                    extras += '<div class="header-bar"></div>';
-                }
                 if (fm.paginate) {
-                    extras += '<div class="page-number">' + (index + 1) + ' / ' + total + '</div>';
+                    extras += `<div class="page-number">${index + 1} / ${total}</div>`;
                 }
                 if (fm.header) {
-                    extras += '<div style="position:absolute;top:16px;left:80px;right:80px;font-size:0.55em;color:#888;">' + fm.header + '</div>';
+                    extras += `<div style="position:absolute;top:16px;left:80px;right:80px;font-size:0.55em;color:#888;">${fm.header}</div>`;
                 }
                 if (fm.footer) {
-                    extras += '<div style="position:absolute;bottom:16px;left:80px;right:80px;font-size:0.55em;color:#888;">' + fm.footer + '</div>';
+                    extras += `<div style="position:absolute;bottom:16px;left:80px;right:80px;font-size:0.55em;color:#888;">${fm.footer}</div>`;
                 }
 
-                return '<section class="' + classes + '" style="' + inlineStyle + '">' + extras + htmlContent + '</section>';
+                return `<section class="${classes}" style="${inlineStyle}">${extras}${htmlContent}</section>`;
             }
 
             render(markdown) {
@@ -1563,28 +1031,7 @@
         const marpEngine = new MarpEngine();
 
         // ============================================================
-        // Mermaid init
-        // ============================================================
-        function initMermaid() {
-            if (!window.mermaid) return;
-            mermaid.initialize({
-                startOnLoad: false,
-                theme: 'default',
-                securityLevel: 'loose',
-                flowchart: { htmlLabels: false, useMaxWidth: true },
-                themeVariables: {
-                    primaryColor: '#f8f9fa',
-                    primaryBorderColor: '#d0d7de',
-                    primaryTextColor: '#24292f',
-                    lineColor: '#57606a',
-                    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif',
-                    fontSize: '14px'
-                }
-            });
-        }
-
-        // ============================================================
-        // Marked config
+        // Marked Config & Mermaid Setup
         // ============================================================
         function initMarked() {
             marked.use({
@@ -1614,101 +1061,130 @@
             });
         }
 
+        function initMermaid() {
+            if (!window.mermaid) return;
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
+                securityLevel: 'loose',
+                flowchart: { htmlLabels: false, useMaxWidth: true }
+            });
+        }
+
         // ============================================================
-        // Preview rendering
+        // Copy code blocks
         // ============================================================
-        async function renderPreview(markdownText) {
-            const isMarp = /^---\s*\n[\s\S]*?marp:\s*true[\s\S]*?\n---/.test(markdownText);
-            const marpStyleTag = document.getElementById('marp-style');
+        function addCopyButtons() {
+            const preBlocks = previewContainer.querySelectorAll('pre');
+            preBlocks.forEach(pre => {
+                if (pre.querySelector('code.language-mermaid') || pre.closest('.mermaid-container')) return;
+                pre.style.position = 'relative';
+                
+                if (pre.querySelector('.code-copy-btn')) return;
+
+                const btn = document.createElement('button');
+                btn.className = 'code-copy-btn';
+                btn.innerHTML = '<i data-lucide="copy"></i>';
+                btn.title = 'コピー';
+                pre.appendChild(btn);
+
+                btn.addEventListener('click', async () => {
+                    const code = pre.querySelector('code');
+                    const text = code ? code.innerText : pre.innerText;
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        btn.innerHTML = '<i data-lucide="check"></i>';
+                        if (window.lucide) lucide.createIcons({ root: btn });
+                        
+                        // Swift bridge haptics notification
+                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptics) {
+                            window.webkit.messageHandlers.haptics.postMessage('success');
+                        }
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = '<i data-lucide="copy"></i>';
+                            if (window.lucide) lucide.createIcons({ root: btn });
+                        }, 2000);
+                    } catch (e) {
+                        showToast('コピーできませんでした', true);
+                    }
+                });
+            });
+            if (window.lucide) lucide.createIcons({ root: previewContainer });
+        }
+
+        // ============================================================
+        // Preview Rendering
+        // ============================================================
+        async function renderPreview(text) {
+            const isMarp = /^---\s*\n[\s\S]*?marp:\s*true[\s\S]*?\n---/.test(text);
 
             if (isMarp) {
-                const result = marpEngine.render(markdownText);
-                const { css, slides, fm } = result;
-
-                // Scope CSS
+                const { css, slides } = marpEngine.render(text);
                 const scopedCss = css.replace(/\bsection\b/g, '.marp-slide-wrapper section');
                 marpStyleTag.textContent = scopedCss;
 
-                // Build slide wrappers
                 let slidesHtml = '';
                 slides.forEach((slideHtml, i) => {
-                    slidesHtml += '<div class="marp-slide-wrapper">' + slideHtml + '</div>';
-                    slidesHtml += '<div class="marp-page-number">SLIDE ' + (i + 1) + ' / ' + slides.length + '</div>';
+                    slidesHtml += `<div class="marp-slide-wrapper">${slideHtml}</div>`;
+                    slidesHtml += `<div class="marp-page-number">SLIDE ${i + 1} / ${slides.length}</div>`;
                 });
 
-                const cleanHtml = DOMPurify.sanitize(slidesHtml, {
+                previewContainer.innerHTML = DOMPurify.sanitize(slidesHtml, {
                     USE_PROFILES: { html: true, svg: true },
                     ADD_TAGS: ['section', 'style', 'svg', 'foreignObject', 'path', 'g', 'figure', 'figcaption', 'div'],
-                    ADD_ATTR: ['id', 'data-theme', 'style', 'class', 'viewBox', 'width', 'height', 'd', 'fill', 'xmlns'],
-                    FORBID_TAGS: ['script'],
-                    FORBID_ATTR: ['onerror', 'onclick', 'onload']
+                    ADD_ATTR: ['id', 'style', 'class', 'viewBox', 'width', 'height', 'd', 'fill', 'xmlns'],
+                    FORBID_TAGS: ['script']
                 });
-
-                previewContainer.innerHTML = cleanHtml;
+                
                 previewContainer.classList.add('marp-mode');
                 previewContainer.classList.remove('markdown-body');
-
-                // Resize slides to fit container
                 resizeMarpSlides();
             } else {
-                // Standard document mode
-                const rawHtml = marked.parse(markdownText);
-                const cleanHtml = DOMPurify.sanitize(rawHtml, {
+                marpStyleTag.textContent = '';
+                const parsedHtml = marked.parse(text);
+                previewContainer.innerHTML = DOMPurify.sanitize(parsedHtml, {
                     ADD_TAGS: ['iframe', 'input', 'div'],
                     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'target', 'type', 'checked', 'disabled', 'start']
                 });
-                previewContainer.innerHTML = cleanHtml;
-                marpStyleTag.textContent = '';
                 previewContainer.classList.remove('marp-mode');
                 previewContainer.classList.add('markdown-body');
             }
 
-            // Render Mermaid
+            // Render Mermaid diagrams
             if (window.mermaid) {
                 const mermaidBlocks = previewContainer.querySelectorAll('code.language-mermaid');
                 for (let i = 0; i < mermaidBlocks.length; i++) {
                     const block = mermaidBlocks[i];
                     try {
                         const code = block.textContent;
-                        const diagramId = 'mermaid-diagram-' + Math.random().toString(36).substr(2, 9);
-                        const { svg } = await mermaid.render(diagramId, code);
-                        const cleanSvg = svg.replace(/\s+textLength="[^"]*"/g, '').replace(/\s+lengthAdjust="[^"]*"/g, '');
+                        const id = `mermaid-diagram-${Math.random().toString(36).substr(2, 9)}`;
+                        const { svg } = await mermaid.render(id, code);
+                        
                         const container = document.createElement('div');
                         container.className = 'mermaid-container';
                         container.style.display = 'flex';
                         container.style.justifyContent = 'center';
-                        container.style.margin = '1.5rem 0';
-                        container.innerHTML = cleanSvg;
+                        container.style.margin = '16px 0';
+                        container.innerHTML = svg.replace(/\s+textLength="[^"]*"/g, '').replace(/\s+lengthAdjust="[^"]*"/g, '');
                         block.parentNode.replaceWith(container);
-
-                        container.querySelectorAll('text, tspan').forEach(el => {
-                            el.style.setProperty('dominant-baseline', 'auto', 'important');
-                            el.style.setProperty('alignment-baseline', 'auto', 'important');
-                            el.style.setProperty('baseline-shift', 'normal', 'important');
-                        });
-                        container.querySelectorAll('foreignObject, foreignObject div, foreignObject span, .nodeLabel, .edgeLabel, .label').forEach(el => {
-                            el.style.setProperty('background-color', 'transparent', 'important');
-                            el.style.setProperty('visibility', 'visible', 'important');
-                            el.style.setProperty('opacity', '1', 'important');
-                        });
                     } catch (err) {
                         console.error('Mermaid render error:', err);
-                        const errorDiv = document.createElement('div');
-                        errorDiv.style.cssText = 'color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.2); padding: 1rem; border-radius: 6px; font-family: monospace; font-size: 0.9em; margin: 1.5rem 0; white-space: pre-wrap;';
-                        errorDiv.innerHTML = `<strong>Mermaid 描画エラー:</strong>\n${DOMPurify.sanitize(err.message || String(err))}`;
-                        block.parentNode.replaceWith(errorDiv);
+                        const errBox = document.createElement('div');
+                        errBox.style.cssText = 'color: #ff453a; background: rgba(255,69,58,0.1); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 16px 0;';
+                        errBox.innerText = `Mermaid Render Error: ${err.message || err}`;
+                        block.parentNode.replaceWith(errBox);
                     }
                 }
             }
+
+            addCopyButtons();
         }
 
-        // ============================================================
-        // Marp slide resizing
-        // ============================================================
         function resizeMarpSlides() {
             const wrappers = previewContainer.querySelectorAll('.marp-slide-wrapper');
             if (!wrappers.length) return;
-            const containerWidth = previewContainer.clientWidth - 64; // padding
+            const containerWidth = previewContainer.clientWidth - 40; // padding horizontal
             const scale = Math.min(containerWidth / 1280, 1);
             wrappers.forEach(w => {
                 w.style.setProperty('--preview-scale', scale);
@@ -1716,45 +1192,7 @@
         }
 
         // ============================================================
-        // File loading
-        // ============================================================
-        function loadFile(file) {
-            if (!file) return;
-            const encoding = encodingSelect.value;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const text = e.target.result;
-                currentFileName = file.name;
-                currentRawText = text;
-
-                // Show content area, hide dropzone
-                dropZone.style.display = 'none';
-                previewWrapper.classList.add('active');
-                btnPrint.style.display = '';
-                fileNameDisplay.style.display = '';
-                fileNameText.textContent = file.name;
-                modeSwitcher.classList.add('visible');
-
-                // Update page title
-                document.title = `${file.name} - Markdown Viewer`;
-
-                // Render both views
-                renderPreview(text);
-                renderRawView(text);
-
-                // Apply current view mode
-                applyViewMode(currentViewMode);
-
-                showToast('ファイルを読み込みました: ' + file.name);
-            };
-            reader.onerror = () => {
-                showToast('ファイルの読み込みに失敗しました', true);
-            };
-            reader.readAsText(file, encoding);
-        }
-
-        // ============================================================
-        // Raw view rendering
+        // Raw View (Markdown Code View)
         // ============================================================
         function renderRawView(text) {
             const lines = text.split('\n');
@@ -1777,202 +1215,263 @@
         }
 
         // ============================================================
-        // View mode switching
+        // Text Search (Safari Style Highlight & Navigation)
         // ============================================================
+        function performSearch() {
+            const query = searchInput.value.trim();
+            const activeContainer = currentViewMode === 'preview' ? previewContainer : rawContainer;
+            
+            clearSearchHighlights(activeContainer);
+
+            if (!query) {
+                searchMatches = [];
+                currentMatchIndex = -1;
+                updateSearchControls();
+                return;
+            }
+
+            const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+            const walker = document.createTreeWalker(activeContainer, NodeFilter.SHOW_TEXT, null, false);
+            const textNodes = [];
+
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                const parentTag = node.parentNode.tagName.toUpperCase();
+                if (parentTag !== 'SCRIPT' && parentTag !== 'STYLE' && parentTag !== 'TEXTAREA') {
+                    textNodes.push(node);
+                }
+            }
+
+            searchMatches = [];
+            currentMatchIndex = -1;
+
+            textNodes.forEach(node => {
+                const text = node.nodeValue;
+                if (regex.test(text)) {
+                    const span = document.createElement('span');
+                    span.innerHTML = text.replace(regex, '<mark class="search-match">$1</mark>');
+                    
+                    const parent = node.parentNode;
+                    while (span.firstChild) {
+                        const child = span.firstChild;
+                        if (child.tagName === 'MARK') {
+                            searchMatches.push(child);
+                        }
+                        parent.insertBefore(child, node);
+                    }
+                    parent.removeChild(node);
+                }
+            });
+
+            if (searchMatches.length > 0) {
+                currentMatchIndex = 0;
+                highlightCurrentMatch();
+            }
+
+            updateSearchControls();
+        }
+
+        function clearSearchHighlights(container) {
+            const marks = container.querySelectorAll('mark.search-match');
+            marks.forEach(mark => {
+                const parent = mark.parentNode;
+                if (parent) {
+                    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                }
+            });
+            container.normalize();
+        }
+
+        function highlightCurrentMatch() {
+            searchMatches.forEach((m, idx) => {
+                m.classList.toggle('current-match', idx === currentMatchIndex);
+            });
+
+            if (currentMatchIndex >= 0 && searchMatches[currentMatchIndex]) {
+                searchMatches[currentMatchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function updateSearchControls() {
+            const total = searchMatches.length;
+            searchCount.textContent = total > 0 ? `${currentMatchIndex + 1} / ${total}` : '0 / 0';
+            
+            searchPrev.disabled = total === 0;
+            searchNext.disabled = total === 0;
+            searchClear.style.display = searchInput.value.length > 0 ? '' : 'none';
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // ============================================================
+        // File Loading & Bridge
+        // ============================================================
+        function loadFileContent(text, name) {
+            currentFileName = name;
+            currentRawText = text;
+
+            welcomeScreen.style.display = 'none';
+            contentWrapper.style.display = 'flex';
+            
+            fileNameText.textContent = name;
+            segmentedContainer.style.display = '';
+            
+            btnSearchToggle.style.display = '';
+            btnCopyAll.style.display = '';
+
+            document.title = `${name} - Markdown Viewer`;
+
+            renderPreview(text);
+            renderRawView(text);
+            applyViewMode(currentViewMode);
+
+            showToast('ファイルを読み込みました');
+        }
+
         function applyViewMode(mode) {
             currentViewMode = mode;
-
-            // Update button states
-            btnModePreview.classList.toggle('active', mode === 'preview');
-            btnModeRaw.classList.toggle('active', mode === 'raw');
+            segmentPreview.classList.toggle('active', mode === 'preview');
+            segmentRaw.classList.toggle('active', mode === 'raw');
 
             if (mode === 'preview') {
                 previewContainer.style.display = '';
                 rawContainer.classList.remove('active');
-                btnCopy.style.display = 'none';
             } else {
                 previewContainer.style.display = 'none';
                 rawContainer.classList.add('active');
-                btnCopy.style.display = '';
             }
 
-            // Re-create icons for updated buttons
-            if (window.lucide) lucide.createIcons({ root: modeSwitcher });
+            // Reset search when switching modes
+            closeSearch();
         }
 
         // ============================================================
-        // Toast
+        // General Controls & UI
         // ============================================================
-        let toastTimer = null;
         function showToast(message, isError = false) {
             toastText.textContent = message;
+            toastEl.classList.toggle('error', isError);
+            
             const icon = toastEl.querySelector('i, svg');
             if (icon) {
-                if (isError) {
-                    toastEl.classList.add('error');
-                    icon.setAttribute('data-lucide', 'alert-circle');
-                } else {
-                    toastEl.classList.remove('error');
-                    icon.setAttribute('data-lucide', 'check-circle');
-                }
+                icon.setAttribute('data-lucide', isError ? 'alert-circle' : 'check-circle');
+                if (window.lucide) lucide.createIcons({ root: toastEl });
             }
-            if (window.lucide) lucide.createIcons({ root: toastEl });
+
             toastEl.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
+            setTimeout(() => {
                 toastEl.classList.remove('show');
-            }, 3000);
+            }, 2500);
+        }
+
+        function openSearch() {
+            searchPanel.classList.add('show');
+            searchInput.focus();
+        }
+
+        function closeSearch() {
+            searchPanel.classList.remove('show');
+            searchInput.value = '';
+            const activeContainer = currentViewMode === 'preview' ? previewContainer : rawContainer;
+            clearSearchHighlights(activeContainer);
+            searchMatches = [];
+            currentMatchIndex = -1;
+            updateSearchControls();
+        }
+
+        function triggerNativeOpenFile() {
+            // Trigger SwiftUI DocumentPicker if message handler registered
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openFile) {
+                window.webkit.messageHandlers.openFile.postMessage(null);
+            } else {
+                // Fallback to standard input
+                fileInput.click();
+            }
         }
 
         // ============================================================
-        // Theme (header uses dark theme always)
+        // Event Listeners
         // ============================================================
-        function setTheme() {
-            // Header/chrome is always dark mode
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-
-        // ============================================================
-        // Drag & drop handlers
-        // ============================================================
-        let dragCounter = 0;
-
-        document.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            dragCounter++;
-            if (dragCounter === 1) {
-                // Show overlay only when preview is active (file already loaded)
-                if (previewWrapper.classList.contains('active')) {
-                    dragOverlay.classList.add('active');
-                } else {
-                    dropZoneInner.classList.add('dragging');
-                }
-            }
-        });
-
-        document.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dragCounter--;
-            if (dragCounter === 0) {
-                dragOverlay.classList.remove('active');
-                dropZoneInner.classList.remove('dragging');
-            }
-        });
-
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dragCounter = 0;
-            dragOverlay.classList.remove('active');
-            dropZoneInner.classList.remove('dragging');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.name.match(/\.(md|markdown|txt)$/i)) {
-                    loadFile(file);
-                } else {
-                    showToast('Markdownファイル (.md) を選択してください', true);
-                }
-            }
-        });
-
-        // ============================================================
-        // Event listeners
-        // ============================================================
-        function openFileDialog() {
-            fileInput.click();
-        }
-
-        btnOpen.addEventListener('click', openFileDialog);
-        dropBtnOpen.addEventListener('click', openFileDialog);
-        dropZoneInner.addEventListener('click', (e) => {
-            if (!e.target.closest('button')) {
-                openFileDialog();
-            }
-        });
-
-        // Settings events
-        btnSettings.addEventListener('click', openSettingsModal);
-        btnCloseSettings.addEventListener('click', closeSettingsModal);
-        btnCancelSettings.addEventListener('click', closeSettingsModal);
-        btnSaveSettings.addEventListener('click', saveSettings);
-
-        // Close settings modal when clicking outside of it
-        settingsModal.addEventListener('click', (e) => {
-            if (e.target === settingsModal) {
-                closeSettingsModal();
-            }
-        });
-
-        // Google Drive events
-        btnGoogleOpen.addEventListener('click', handleGoogleDriveOpen);
-        dropBtnGoogleOpen.addEventListener('click', handleGoogleDriveOpen);
-
+        btnOpenNav.addEventListener('click', triggerNativeOpenFile);
+        welcomeOpenBtn.addEventListener('click', triggerNativeOpenFile);
+        
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
-                loadFile(e.target.files[0]);
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    loadFileContent(evt.target.result, file.name);
+                };
+                reader.readAsText(file);
             }
-            // Reset so same file can be re-selected
-            fileInput.value = '';
+            fileInput.value = ''; // Reset
         });
 
-        btnPrint.addEventListener('click', () => {
-            window.print();
-        });
+        segmentPreview.addEventListener('click', () => applyViewMode('preview'));
+        segmentRaw.addEventListener('click', () => applyViewMode('raw'));
 
-        let copyFeedbackTimer = null;
-        btnCopy.addEventListener('click', async () => {
+        // Copy entire file
+        btnCopyAll.addEventListener('click', async () => {
             if (!currentRawText) return;
             try {
                 await navigator.clipboard.writeText(currentRawText);
-                showToast('Markdownをクリップボードにコピーしました');
-
-                // Change icon to check
-                const icon = btnCopy.querySelector('i, svg');
-                if (icon) {
-                    icon.setAttribute('data-lucide', 'check');
-                    if (window.lucide) lucide.createIcons({ root: btnCopy });
-                }
-
-                // Restore to copy icon after 2 seconds
-                clearTimeout(copyFeedbackTimer);
-                copyFeedbackTimer = setTimeout(() => {
-                    if (icon) {
-                        icon.setAttribute('data-lucide', 'copy');
-                        if (window.lucide) lucide.createIcons({ root: btnCopy });
-                    }
-                }, 2000);
-            } catch (err) {
-                console.error('Copy failed', err);
+                showToast('文書全体をコピーしました');
+            } catch (e) {
                 showToast('コピーに失敗しました', true);
             }
         });
 
-        // Mode switcher
-        btnModePreview.addEventListener('click', () => applyViewMode('preview'));
-        btnModeRaw.addEventListener('click', () => applyViewMode('raw'));
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+O to open file
-            if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-                e.preventDefault();
-                openFileDialog();
-            }
-            // Ctrl+P to print
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                if (previewWrapper.classList.contains('active')) {
-                    window.print();
-                }
+        // Search trigger
+        btnSearchToggle.addEventListener('click', () => {
+            if (searchPanel.classList.contains('show')) {
+                closeSearch();
+            } else {
+                openSearch();
             }
         });
 
-        // Resize handler for marp slides
+        searchInput.addEventListener('input', performSearch);
+        
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            performSearch();
+            searchInput.focus();
+        });
+
+        searchPrev.addEventListener('click', () => {
+            if (searchMatches.length === 0) return;
+            currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+            highlightCurrentMatch();
+            updateSearchControls();
+        });
+
+        searchNext.addEventListener('click', () => {
+            if (searchMatches.length === 0) return;
+            currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+            highlightCurrentMatch();
+            updateSearchControls();
+        });
+
+        searchDone.addEventListener('click', closeSearch);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Cmd+F or Ctrl+F for Search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+                e.preventDefault();
+                if (contentWrapper.style.display !== 'none') {
+                    openSearch();
+                }
+            }
+            // Escape to close search
+            if (e.key === 'Escape' && searchPanel.classList.contains('show')) {
+                closeSearch();
+            }
+        });
+
+        // Resize handler for Marp
         window.addEventListener('resize', () => {
             if (previewContainer.classList.contains('marp-mode')) {
                 resizeMarpSlides();
@@ -1980,220 +1479,16 @@
         });
 
         // ============================================================
-        // Settings & Modal Control
+        // iOS Native App Bridge
         // ============================================================
-        function loadSettings() {
-            googleApiKey = localStorage.getItem('markdown_viewer_google_api_key') || '';
-            googleClientId = localStorage.getItem('markdown_viewer_google_client_id') || '';
+        window.loadMarkdownText = function(text, name) {
+            loadFileContent(text, name);
+        };
 
-            settingGoogleApiKey.value = googleApiKey;
-            settingGoogleClientId.value = googleClientId;
-        }
-
-        function saveSettings() {
-            googleApiKey = settingGoogleApiKey.value.trim();
-            googleClientId = settingGoogleClientId.value.trim();
-
-            localStorage.setItem('markdown_viewer_google_api_key', googleApiKey);
-            localStorage.setItem('markdown_viewer_google_client_id', googleClientId);
-
-            // Re-initialize GIS token client if client ID changed
-            if (googleClientId) {
-                initGis();
-            }
-
-            showToast('設定を保存しました');
-            closeSettingsModal();
-        }
-
-        function openSettingsModal() {
-            loadSettings();
-            settingsModal.classList.add('active');
-        }
-
-        function closeSettingsModal() {
-            settingsModal.classList.remove('active');
-        }
-
-        // ============================================================
-        // Google Drive Picker Integration
-        // ============================================================
-        function gapiLoaded() {
-            gapi.load('client:picker', initializeGapiClient);
-        }
-        window.gapiLoaded = gapiLoaded;
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    apiKey: googleApiKey
-                });
-                gapiInited = true;
-            } catch (err) {
-                console.error('Error initializing GAPI client', err);
-            }
-        }
-
-        function gisLoaded() {
-            gisInited = true;
-            initGis();
-        }
-        window.gisLoaded = gisLoaded;
-
-        function initGis() {
-            if (!googleClientId || !window.google) return;
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: googleClientId,
-                    scope: 'https://www.googleapis.com/auth/drive.readonly',
-                    callback: '', // defined dynamically during authentication request
-                });
-            } catch (err) {
-                console.error('Error initializing GIS token client', err);
-            }
-        }
-
-        function loadGoogleApisIfNecessary() {
-            if (window.gapi && !gapiInited) {
-                gapiLoaded();
-            }
-            if (window.google && window.google.accounts && !gisInited) {
-                gisLoaded();
-            }
-        }
-
-        async function handleGoogleDriveOpen() {
-            if (!googleApiKey || !googleClientId) {
-                showToast('Google ドライブ連携の設定（APIキーとクライアントID）を入力してください', true);
-                openSettingsModal();
-                return;
-            }
-
-            loadGoogleApisIfNecessary();
-
-            if (!gapiInited && window.gapi) {
-                await initializeGapiClient();
-            }
-
-            if (!tokenClient) {
-                initGis();
-            }
-
-            if (!tokenClient) {
-                showToast('Google APIの初期化に失敗しました。クライアントIDを確認してください。', true);
-                return;
-            }
-
-            tokenClient.callback = async (response) => {
-                if (response.error !== undefined) {
-                    showToast('Google認証エラー: ' + response.error, true);
-                    return;
-                }
-                accessToken = response.access_token;
-                createPicker();
-            };
-
-            if (accessToken === null) {
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            } else {
-                tokenClient.requestAccessToken({ prompt: '' });
-            }
-        }
-
-        function createPicker() {
-            const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
-            view.setMimeTypes('text/markdown,text/plain,application/octet-stream');
-            view.setIncludeFolders(true); // フォルダを含めて階層移動を可能にする
-            
-            const picker = new google.picker.PickerBuilder()
-                .enableFeature(google.picker.Feature.NAV_HIDDEN)
-                .setDeveloperKey(googleApiKey)
-                .setOAuthToken(accessToken)
-                .addView(view)
-                .setCallback(pickerCallback)
-                .build();
-            picker.setVisible(true);
-        }
-
-        async function pickerCallback(data) {
-            if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
-                const doc = data[google.picker.Response.DOCUMENTS][0];
-                const fileId = doc[google.picker.Document.ID];
-                const fileName = doc[google.picker.Document.NAME];
-
-                if (!fileName.match(/\.(md|markdown|txt)$/i)) {
-                    showToast(`選択エラー: 「${fileName}」は対象外のファイル形式です (.md, .txt のみ)`, true);
-                    return;
-                }
-
-                showToast('Googleドライブからファイルをダウンロード中...');
-                
-                try {
-                    // gapi.client.request を使用して CORS を完全に回避してダウンロード
-                    const response = await gapi.client.request({
-                        path: 'https://www.googleapis.com/drive/v3/files/' + fileId,
-                        method: 'GET',
-                        params: { alt: 'media' }
-                    });
-
-                    const text = response.body;
-                    currentFileName = fileName;
-                    currentRawText = text;
-
-                    dropZone.style.display = 'none';
-                    previewWrapper.classList.add('active');
-                    btnPrint.style.display = '';
-                    fileNameDisplay.style.display = '';
-                    fileNameText.textContent = fileName;
-                    modeSwitcher.classList.add('visible');
-
-                    document.title = `${fileName} - Markdown Viewer`;
-
-                    renderPreview(text);
-                    renderRawView(text);
-                    applyViewMode(currentViewMode);
-
-                    showToast('ファイルを読み込みました: ' + fileName);
-                } catch (error) {
-                    console.error('Error fetching file content from Google Drive:', error);
-                    showToast(`ファイル取得失敗: ${error.message || 'CORSまたは権限エラー'} (認証時の権限チェックを確認してください)`, true);
-                }
-            }
-        }
-
-        // ============================================================
-        // Initialization
-        // ============================================================
-        function init() {
-            // Theme (dark chrome, content has fixed colors)
-            setTheme();
-
-            // Load settings from localStorage
-            loadSettings();
-
-            // Initialize GIS if Client ID is configured
-            if (googleClientId) {
-                initGis();
-            }
-
-            // iOS/iPadOS detection to fix file input gray-out issue
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIOS) {
-                fileInput.removeAttribute('accept');
-            }
-
-            // Marked
-            initMarked();
-
-            // Mermaid
-            initMermaid();
-
-            // Lucide icons
-            if (window.lucide) lucide.createIcons();
-        }
-
-        init();
+        // Initialize
+        initMarked();
+        initMermaid();
+        if (window.lucide) lucide.createIcons();
     </script>
 </body>
 
