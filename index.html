@@ -1366,6 +1366,7 @@
             }, 2500);
         }
 
+        // Search panel open/close
         function openSearch() {
             searchPanel.classList.add('show');
             searchInput.focus();
@@ -1486,6 +1487,12 @@
         };
 
         // Initialize
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS) {
+            fileInput.removeAttribute('accept');
+        }
+
         initMarked();
         initMermaid();
         if (window.lucide) lucide.createIcons();
